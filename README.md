@@ -5,16 +5,9 @@ Based on [2s-AGCN](https://github.com/lshiwjx/2s-AGCN)
 
 # Data Preparation
 
- - Download the raw data from [NTU-RGB+D](https://github.com/shahroudy/NTURGB-D) and [Skeleton-Kinetics](https://github.com/yysijie/st-gcn). Then put them under the data directory:
+ - Download the raw data from [NTU-RGB+D](https://github.com/shahroudy/NTURGB-D). Then put them under the data directory:
  
         -data\  
-          -kinetics_raw\  
-            -kinetics_train\
-              ...
-            -kinetics_val\
-              ...
-            -kinetics_train_label.json
-            -keintics_val_label.json
           -nturgbd_raw\  
             -nturgb+d_skeletons\
               ...
