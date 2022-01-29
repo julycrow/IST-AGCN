@@ -44,7 +44,7 @@ class Graph:
         self.outward = outward
         self.neighbor = neighbor
 
-    def get_adjacency_matrix(self, labeling_mode=None):
+    def get_adjacency_matrix(self, labeling_mode=None):  # 得到邻接矩阵A
         if labeling_mode is None:
             return self.A
         if labeling_mode == 'spatial':

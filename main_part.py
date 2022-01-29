@@ -244,6 +244,12 @@ class Processor():
         shutil.copy2(inspect.getfile(Model), self.arg.work_dir)
         print(Model)
         self.model = Model(**self.arg.model_args).cuda(output_device)
+
+        from thop import profile
+        input = torch.randn(1, 3, 300, 19, 2).cuda()
+        flops, params = profile(self.model, inputs=(input,))
+        print('flops=', flops, 'params=', params)
+
         print(self.model)
         self.loss = nn.CrossEntropyLoss().cuda(output_device)
 
@@ -381,6 +387,11 @@ class Processor():
         for batch_idx, (data, label, index) in enumerate(process):
             self.global_step += 1
             # get data
+            data = data.numpy()
+            del_part = [7, 11, 21, 22, 23, 24]
+            data = np.delete(data, del_part, axis=3)
+            data = torch.from_numpy(data)
+
             data = Variable(data.float().cuda(self.output_device), requires_grad=False)  # (4,3,300,25,2)
             label = Variable(label.long().cuda(self.output_device), requires_grad=False)
             timer['dataloader'] += self.split_time()
@@ -435,7 +446,7 @@ class Processor():
             weights = OrderedDict([[k.split('module.')[-1],
                                     v.cpu()] for k, v in state_dict.items()])
 
-            torch.save(weights, self.arg.work_dir + '/' + self.arg.model_saved_name + '-' + str(epoch) + '-' + str(int(self.global_step)) + '.pt')
+            torch.save(weights, self.arg.model_saved_name + '-' + str(epoch) + '-' + str(int(self.global_step)) + '.pt')
 
     def eval(self, epoch, save_score=False, loader_name=['test'], wrong_file=None, result_file=None):
         if wrong_file is not None:
@@ -453,6 +464,10 @@ class Processor():
             step = 0
             process = tqdm(self.data_loader[ln])
             for batch_idx, (data, label, index) in enumerate(process):
+                data = data.numpy()
+                del_part = [7, 11, 21, 22, 23, 24]
+                data = np.delete(data, del_part, axis=3)
+                data = torch.from_numpy(data)
                 with torch.no_grad():
                     data = Variable(
                         data.float().cuda(self.output_device),
@@ -566,7 +581,7 @@ if __name__ == '__main__':
     p = parser.parse_args()
     if p.config is not None:
         with open(p.config, 'r') as f:
-            default_arg = yaml.safe_load(f)
+            default_arg = yaml.load(f)
         key = vars(p).keys()
         for k in default_arg.keys():
             if k not in key:

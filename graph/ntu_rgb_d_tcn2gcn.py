@@ -40,7 +40,7 @@ neighbor = inward + outward
 class Graph:
     def __init__(self, labeling_mode='spatial'):
         if labeling_mode == 'spatial' or labeling_mode == 'spatial_sym':
-            self.A = self.get_adjacency_matrix(labeling_mode)
+            self.A, self.tcn_A = self.get_adjacency_matrix(labeling_mode)
         elif labeling_mode == 'spatial_3' or labeling_mode == 'spatial_3_sym':
             self.A, self.A2, self.A3 = self.get_adjacency_matrix(labeling_mode)
         self.num_node = num_node
@@ -54,10 +54,29 @@ class Graph:
             return self.A
         if labeling_mode == 'spatial':
             A = tools.get_spatial_graph(num_node, self_link, inward, outward)
-            return A
+            tcn_A = torch.zeros((25, 25))
+
+            for i in range(25):
+                tcn_A[i][i] = 1
+                for j in range(1, 5):
+                    if i - j >= 0:
+                        tcn_A[i][i - j] = 1
+                for j in range(1, 5):
+                    if i + j <= 24:
+                        tcn_A[i][i + j] = 1
+            return A, tcn_A
         elif labeling_mode == 'spatial_sym':
             A = tools.get_spatial_sym_graph(num_node, self_link, inward, outward, sym)
-            return A
+            tcn_A = torch.zeros((25, 25))
+            for i in range(25):
+                tcn_A[i][i] = 1
+                for j in range(1, 5):
+                    if i - j >= 0:
+                        tcn_A[i][i - j] = 1
+                for j in range(1, 5):
+                    if i + j <= 24:
+                        tcn_A[i][i + j] = 1
+            return A, tcn_A
         elif labeling_mode == 'spatial_3':
             A = tools.get_spatial_graph(num_node, self_link, inward, outward)
             A2 = tools.get_spatial_graph(num_node, self_link, inward_2, outward_2)

@@ -47,4 +47,4 @@ for dataset in datasets:
             if dataset != 'kinetics':
                 v1 -= 1
                 v2 -= 1
-            fp_sp[:, :, :, v1, :] = data[:, :, :, v1, :] - data[:, :, :, v2, :]
+            fp_sp[:, :, :, v1, :] = data[:, :, :, v1, :] - data[:, :, :, v2, :]  # 二阶信息向量

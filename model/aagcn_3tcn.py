@@ -39,14 +39,21 @@ class unit_tcn(nn.Module):
         pad = int((kernel_size - 1) / 2)
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=(kernel_size, 1), padding=(pad, 0),
                               stride=(stride, 1))
-
+        self.conv2 = nn.Conv2d(in_channels, out_channels, kernel_size=(3, 1), padding=(int((3 - 1) / 2), 0),
+                              stride=(stride, 1))
+        self.conv3 = nn.Conv2d(in_channels, out_channels, kernel_size=(15, 1), padding=(int((15 - 1) / 2), 0),
+                              stride=(stride, 1))
         self.bn = nn.BatchNorm2d(out_channels)
         self.relu = nn.ReLU(inplace=True)
         conv_init(self.conv)
+        conv_init(self.conv2)
+        conv_init(self.conv3)
         bn_init(self.bn, 1)
 
     def forward(self, x):
-        x = self.bn(self.conv(x))
+        x = self.conv(x) + self.conv2(x) + self.conv3(x)
+        x = self.bn(x)
+        # x = self.bn(self.conv(x))
         return x
 
 
@@ -57,7 +64,7 @@ class unit_gcn(nn.Module):
         self.inter_c = inter_channels
         self.out_c = out_channels
         self.in_c = in_channels
-        self.num_subset = num_subset
+        self.num_subset = num_subset  # 子集
         num_jpts = A.shape[-1]
 
         self.conv_d = nn.ModuleList()
@@ -145,7 +152,7 @@ class unit_gcn(nn.Module):
                 A1 = self.conv_a[i](x).permute(0, 3, 1, 2).contiguous().view(N, V, self.inter_c * T)
                 A2 = self.conv_b[i](x).view(N, self.inter_c * T, V)
                 A1 = self.tan(torch.matmul(A1, A2) / A1.size(-1))  # N V V
-                A1 = A[i] + A1 * self.alpha
+                A1 = A[i] + A1 * self.alpha  # A[i] = B,alpha = C
                 A2 = x.view(N, C * T, V)
                 z = self.conv_d[i](torch.matmul(A2, A1).view(N, C, T, V))
                 y = z + y if y is not None else z
@@ -326,7 +333,7 @@ class Model(nn.Module):
         x = self.data_bn(x)
         x = x.view(N, M, V, C, T).permute(0, 1, 3, 4, 2).contiguous().view(N * M, C, T, V)
 
-        x = self.l1(x)
+        x = self.l1(x)  # [32, 3, 300, 25]
         x = self.l2(x)
         x = self.l3(x)
         x = self.l4(x)

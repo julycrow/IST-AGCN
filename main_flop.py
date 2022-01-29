@@ -21,7 +21,7 @@ from tensorboardX import SummaryWriter
 from torch.autograd import Variable
 from torch.optim.lr_scheduler import _LRScheduler
 from tqdm import tqdm
-
+from thop import profile
 
 class GradualWarmupScheduler(_LRScheduler):
     def __init__(self, optimizer, total_epoch, after_scheduler=None):
@@ -244,6 +244,12 @@ class Processor():
         shutil.copy2(inspect.getfile(Model), self.arg.work_dir)
         print(Model)
         self.model = Model(**self.arg.model_args).cuda(output_device)
+
+        from thop import profile
+        input = torch.randn(1, 3, 300, 25, 2).cuda()
+        flops, params = profile(self.model, inputs=(input,))
+        print('flops=', flops, 'params=', params)
+
         print(self.model)
         self.loss = nn.CrossEntropyLoss().cuda(output_device)
 
@@ -435,7 +441,7 @@ class Processor():
             weights = OrderedDict([[k.split('module.')[-1],
                                     v.cpu()] for k, v in state_dict.items()])
 
-            torch.save(weights, self.arg.work_dir + '/' + self.arg.model_saved_name + '-' + str(epoch) + '-' + str(int(self.global_step)) + '.pt')
+            torch.save(weights, self.arg.model_saved_name + '-' + str(epoch) + '-' + str(int(self.global_step)) + '.pt')
 
     def eval(self, epoch, save_score=False, loader_name=['test'], wrong_file=None, result_file=None):
         if wrong_file is not None:
@@ -566,7 +572,7 @@ if __name__ == '__main__':
     p = parser.parse_args()
     if p.config is not None:
         with open(p.config, 'r') as f:
-            default_arg = yaml.safe_load(f)
+            default_arg = yaml.load(f)
         key = vars(p).keys()
         for k in default_arg.keys():
             if k not in key:

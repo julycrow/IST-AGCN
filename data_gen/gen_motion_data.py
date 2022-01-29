@@ -25,7 +25,7 @@ for dataset in datasets:
                 '../data/{}/{}_data_{}_motion.npy'.format(dataset, set, part),
                 dtype='float32',
                 mode='w+',
-                shape=(N, 3, T, V, M))
+                shape=(N, 3, T, V, M))  # 写motion信息
             for t in tqdm(range(T - 1)):
-                fp_sp[:, :, t, :, :] = data[:, :, t + 1, :, :] - data[:, :, t, :, :]
+                fp_sp[:, :, t, :, :] = data[:, :, t + 1, :, :] - data[:, :, t, :, :]  # temporal 相同点 连接
             fp_sp[:, :, T - 1, :, :] = 0

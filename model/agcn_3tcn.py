@@ -36,17 +36,24 @@ def bn_init(bn, scale):
 class unit_tcn(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=9, stride=1):
         super(unit_tcn, self).__init__()
-        pad = int((kernel_size - 1) / 2)
+        pad = int((kernel_size - 1) / 2)  # 输入输出维度不变
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=(kernel_size, 1), padding=(pad, 0),
                               stride=(stride, 1))
-
+        self.conv2 = nn.Conv2d(in_channels, out_channels, kernel_size=(3, 1), padding=(int((3 - 1) / 2), 0),
+                               stride=(stride, 1))
+        self.conv3 = nn.Conv2d(in_channels, out_channels, kernel_size=(15, 1), padding=(int((15 - 1) / 2), 0),
+                               stride=(stride, 1))
         self.bn = nn.BatchNorm2d(out_channels)
         self.relu = nn.ReLU()
         conv_init(self.conv)
+        conv_init(self.conv2)
+        conv_init(self.conv3)
         bn_init(self.bn, 1)
 
     def forward(self, x):
-        x = self.bn(self.conv(x))
+        x = self.conv(x) + self.conv2(x) + self.conv3(x)
+        x = self.bn(x)
+        # x = self.bn(self.conv(x))
         return x
 
 
@@ -55,12 +62,12 @@ class unit_gcn(nn.Module):
         super(unit_gcn, self).__init__()
         inter_channels = out_channels // coff_embedding
         self.inter_c = inter_channels
-        self.PA = nn.Parameter(torch.from_numpy(A.astype(np.float32)))
+        self.PA = nn.Parameter(torch.from_numpy(A.astype(np.float32)))  # 转换类型，对应论文中B矩阵
         nn.init.constant_(self.PA, 1e-6)
         self.A = Variable(torch.from_numpy(A.astype(np.float32)), requires_grad=False)
         self.num_subset = num_subset
 
-        self.conv_a = nn.ModuleList()
+        self.conv_a = nn.ModuleList()  # 容器
         self.conv_b = nn.ModuleList()
         self.conv_d = nn.ModuleList()
         for i in range(self.num_subset):
@@ -91,14 +98,14 @@ class unit_gcn(nn.Module):
 
     def forward(self, x):
         N, C, T, V = x.size()
-        A = self.A.cuda(x.get_device())
-        A = A + self.PA
+        A = self.A.cuda(x.get_device())  # (3,25,25)
+        A = A + self.PA  # (3,25,25)
 
         y = None
         for i in range(self.num_subset):
-            A1 = self.conv_a[i](x).permute(0, 3, 1, 2).contiguous().view(N, V, self.inter_c * T)
-            A2 = self.conv_b[i](x).view(N, self.inter_c * T, V)
-            A1 = self.soft(torch.matmul(A1, A2) / A1.size(-1))  # N V V
+            A1 = self.conv_a[i](x).permute(0, 3, 1, 2).contiguous().view(N, V, self.inter_c * T)  # (32,25,4800)
+            A2 = self.conv_b[i](x).view(N, self.inter_c * T, V)  # (32,4800,25)
+            A1 = self.soft(torch.matmul(A1, A2) / A1.size(-1))  # N V V ; A1对应C; matmul为tensor乘法
             A1 = A1 + A[i]
             A2 = x.view(N, C * T, V)
             z = self.conv_d[i](torch.matmul(A2, A1).view(N, C, T, V))
@@ -122,7 +129,7 @@ class TCN_GCN_unit(nn.Module):
             self.residual = lambda x: x
 
         else:
-            self.residual = unit_tcn(in_channels, out_channels, kernel_size=1, stride=stride)
+            self.residual = unit_tcn(in_channels, out_channels, kernel_size=1, stride=stride)  # 一层conv代表残差
 
     def forward(self, x):
         x = self.tcn1(self.gcn1(x)) + self.residual(x)
@@ -180,4 +187,4 @@ class Model(nn.Module):
         x = x.view(N, M, c_new, -1)
         x = x.mean(3).mean(1)
 
-        return self.fc(x)
+        return self.fc(x)  # 全连接分类

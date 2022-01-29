@@ -1,4 +1,4 @@
-work_dir: ./work_dir/ntu/xview/agcn_joint
+work_dir: ./work_dir/ntu/xview/aagcn_joint_aagcn_tcn2gcn_test
 model_saved_name: ./runs/ntu_cv_agcn_joint
 # feeder
 feeder: feeders.feeder.Feeder
@@ -17,12 +17,12 @@ test_feeder_args:
   label_path: ./data/ntu/xview/val_label.pkl
 
 # model
-model: model.agcn.Model
+model: model.aagcnold.Model
 model_args:
   num_class: 60
-  num_point: 25
+  num_point: 19
   num_person: 2
-  graph: graph.ntu_rgb_d.Graph
+  graph: graph.ntu_rgb_d_simple.Graph
   graph_args:
     labeling_mode: 'spatial'
 
@@ -32,8 +32,8 @@ base_lr: 0.1
 step: [30, 40]
 
 # training
-device: [0, 1 ,2, 3]
-batch_size: 64
-test_batch_size: 64
+device: [0]
+batch_size: 4
+test_batch_size: 4
 num_epoch: 50
 nesterov: True
