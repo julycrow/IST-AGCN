@@ -1,6 +1,6 @@
 # IST-AGCN
 
-base on [2s-AGCN](https://github.com/lshiwjx/2s-AGCN)
+Based on [2s-AGCN](https://github.com/lshiwjx/2s-AGCN)
 
 
 # Data Preparation
